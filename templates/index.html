@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Text Classification</title>
+    <style>
+        #progress-container {
+            width: 100%;
+            background-color: #f3f3f3;
+            border: 1px solid #ccc;
+            margin-top: 20px;
+        }
+
+        #progress-bar {
+            width: 0%;
+            height: 30px;
+            background-color: #4caf50;
+            text-align: center;
+            line-height: 30px;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Text Classification with FinBERT</h1>
+    <form id="textForm" enctype="multipart/form-data">
+        <label for="file">Upload PDF:</label><br>
+        <input type="file" id="file" name="file" accept=".pdf"><br><br>
+        <label for="year">Select Year:</label><br>
+        <select id="year" name="year" required>
+            <option value="">Select Year</option>
+            <option value="2018">2018</option>
+            <option value="2019">2019</option>
+            <option value="2020">2020</option>
+            <option value="2021">2021</option>
+            <option value="2022">2022</option>
+            <option value="2023">2023</option>
+        </select><br><br>
+        <input type="button" value="Store Data" id="storeButton">
+        <input type="button" value="Get Data" id="getButton">
+    </form>
+    <div id="progress-container">
+        <div id="progress-bar">0%</div>
+    </div>
+    <h2 id="result"></h2>
+
+    <h1>Get Summary</h1>
+    <form id="summaryForm">
+        <label for="summaryYear">Select Year:</label><br>
+        <select id="summaryYear" name="summaryYear" required>
+            <option value="">Select Year</option>
+            <option value="2018">2018</option>
+            <option value="2019">2019</option>
+            <option value="2020">2020</option>
+            <option value="2021">2021</option>
+            <option value="2022">2022</option>
+            <option value="2023">2023</option>
+        </select><br><br>
+        <label for="factor">Select Macroeconomic Factor:</label><br>
+        <select id="factor" name="factor" required>
+            <option value="">Select Factor</option>
+            <option value="Inflation">Inflation</option>
+            <option value="International Trade">International Trade</option>
+            <option value="GDP Growth">GDP Growth</option>
+            <option value="Exchange Rates">Exchange Rates</option>
+            <option value="Monetary Policy">Monetary Policy</option>
+            <option value="Fiscal Policy">Fiscal Policy</option>
+            <option value="Unemployment">Unemployment</option>
+        </select><br><br>
+        <input type="button" value="Get Summary" id="getSummaryButton">
+    </form>
+    <h2 id="summaryResult"></h2>
+
+    <script>
+        document.getElementById('storeButton').onclick = async function(event) {
+            const year = document.getElementById('year').value;
+            const fileInput = document.getElementById('file');
+            const file = fileInput.files[0]; // Correct way to get the file
+
+            if (year === "" || !file) {
+                alert("Please select a year and upload a file.");
+                return;
+            }
+
+            event.preventDefault();
+            const formData = new FormData();
+            formData.append('year', year);
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/store_data', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                console.log('Server Response:', result);
+                document.getElementById('result').innerText = JSON.stringify(result.status, null, 2);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+
+            let progress = 0;
+            const progressBar = document.getElementById('progress-bar');
+            const interval = setInterval(() => {
+                if (progress >= 100) {
+                    clearInterval(interval);
+                } else {
+                    progress += 10;
+                    progressBar.style.width = progress + '%';
+                    progressBar.innerText = progress + '%';
+                }
+            }, 100);
+        };
+
+        document.getElementById('getButton').onclick = async function(event) {
+            event.preventDefault();
+            try {
+                const response = await fetch('/forecast', {
+                    method: 'GET'
+                });
+                const result = await response.json();
+                console.log('Data Retrieved:', result);
+                document.getElementById('result').innerText = JSON.stringify(result.results, null, 2);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        };
+
+        document.getElementById('getSummaryButton').onclick = async function(event) {
+            event.preventDefault();
+            const summaryYear = document.getElementById('summaryYear').value;
+            const factor = document.getElementById('factor').value;
+            if (summaryYear === "" || factor === "") {
+                alert("Please select both year and macroeconomic factor.");
+                return;
+            }
+
+            try {
+                const response = await fetch('/get_summary_by_factor_year', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ year: summaryYear, factor: factor })
+                });
+                const result = await response.json();
+                console.log('Summary Retrieved:', result);
+                document.getElementById('summaryResult').innerText = JSON.stringify(result.summary, null, 2);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        };
+    </script>
+</body>
+</html>

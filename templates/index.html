@@ -35,9 +35,11 @@
             <option value="2021">2021</option>
             <option value="2022">2022</option>
             <option value="2023">2023</option>
+            <option value="2023">2024</option>
         </select><br><br>
         <input type="button" value="Store Data" id="storeButton">
         <input type="button" value="Get Data" id="getButton">
+        <input type="button" value="Process Data" id="processButton">
     </form>
     <div id="progress-container">
         <div id="progress-bar">0%</div>
@@ -49,12 +51,7 @@
         <label for="summaryYear">Select Year:</label><br>
         <select id="summaryYear" name="summaryYear" required>
             <option value="">Select Year</option>
-            <option value="2018">2018</option>
-            <option value="2019">2019</option>
-            <option value="2020">2020</option>
-            <option value="2021">2021</option>
-            <option value="2022">2022</option>
-            <option value="2023">2023</option>
+            <!-- Years will be dynamically populated -->
         </select><br><br>
         <label for="factor">Select Macroeconomic Factor:</label><br>
         <select id="factor" name="factor" required>
@@ -71,33 +68,67 @@
     </form>
     <h2 id="summaryResult"></h2>
 
+    <h1>Survey Data</h1>
+    <form id="surveyForm" enctype="multipart/form-data">
+        <label for="surveyFile">Upload Survey Data (Excel):</label><br>
+        <input type="file" id="surveyFile" name="file" accept=".xlsx"><br><br>
+        <input type="button" value="Insert Survey Data" id="insertSurveyButton">
+    </form>
+    <h2 id="surveyResult"></h2>
+
+    <h1>Get Survey Data</h1>
+    <form id="surveyDataForm">
+        <label for="surveyDataYear">Select Year:</label><br>
+        <select id="surveyDataYear" name="surveyDataYear" required>
+            <option value="">Select Year</option>
+            <!-- Years will be dynamically populated -->
+        </select><br><br>
+        <input type="button" value="Get Current Data" id="getCurrentDataButton">
+        <input type="button" value="Get Future Data" id="getFutureDataButton">
+    </form>
+    <h2 id="surveyDataResult"></h2>
+
     <script>
+        async function populateYearDropdowns() {
+            const surveyYearResponse = await fetch('/get_survey_available_years', {
+                method: 'GET'
+            });
+            const surveyYearResult = await surveyYearResponse.json();
+            const surveyYearOptions = surveyYearResult.years.map(year => `<option value="${year}">${year}</option>`).join('');
+
+            const reportYearResponse = await fetch('/get_report_available_years', {
+                method: 'GET'
+            });
+            const reportYearResult = await reportYearResponse.json();
+            const reportYearOptions = reportYearResult.years.map(year => `<option value="${year}">${year}</option>`).join('');
+
+            // Populate year dropdowns for various forms
+            {#document.getElementById('year').innerHTML += yearOptions;#}
+            document.getElementById('summaryYear').innerHTML += reportYearOptions;
+            document.getElementById('surveyDataYear').innerHTML += surveyYearOptions;
+        }
+
+        // Populate the year dropdowns when the page loads
+        document.addEventListener('DOMContentLoaded', populateYearDropdowns);
+
         document.getElementById('storeButton').onclick = async function(event) {
             const year = document.getElementById('year').value;
-            const fileInput = document.getElementById('file');
-            const file = fileInput.files[0]; // Correct way to get the file
-
-            if (year === "" || !file) {
-                alert("Please select a year and upload a file.");
+            if (year === "") {
+                alert("Please select a year.");
                 return;
             }
 
             event.preventDefault();
             const formData = new FormData();
+            formData.append('file', document.getElementById('file').files[0]);
             formData.append('year', year);
-            formData.append('file', file);
 
-            try {
-                const response = await fetch('/store_data', {
-                    method: 'POST',
-                    body: formData
-                });
-                const result = await response.json();
-                console.log('Server Response:', result);
-                document.getElementById('result').innerText = JSON.stringify(result.status, null, 2);
-            } catch (error) {
-                console.error('Error:', error);
-            }
+            const response = await fetch('/store_data', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            document.getElementById('result').innerText = JSON.stringify(result.status, null, 2);
 
             let progress = 0;
             const progressBar = document.getElementById('progress-bar');
@@ -111,44 +142,97 @@
                 }
             }, 100);
         };
+         document.getElementById('processButton').onclick = async function(event) {
+            event.preventDefault();
+            const formData = new FormData();
+            formData.append('file', document.getElementById('file').files[0]);
+
+            const response = await fetch('/process_data', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            document.getElementById('result').innerText = JSON.stringify(result.results, null, 2);
+        };
 
         document.getElementById('getButton').onclick = async function(event) {
             event.preventDefault();
-            try {
-                const response = await fetch('/forecast', {
-                    method: 'GET'
-                });
-                const result = await response.json();
-                console.log('Data Retrieved:', result);
-                document.getElementById('result').innerText = JSON.stringify(result.results, null, 2);
-            } catch (error) {
-                console.error('Error:', error);
-            }
+            const response = await fetch('/get_data', {
+                method: 'GET'
+            });
+            const result = await response.json();
+            document.getElementById('result').innerText = JSON.stringify(result.results, null, 2);
         };
 
         document.getElementById('getSummaryButton').onclick = async function(event) {
             event.preventDefault();
             const summaryYear = document.getElementById('summaryYear').value;
             const factor = document.getElementById('factor').value;
-            if (summaryYear === "" || factor === "") {
+            if (summaryYear === ""|| factor === "") {
                 alert("Please select both year and macroeconomic factor.");
                 return;
             }
 
-            try {
-                const response = await fetch('/get_summary_by_factor_year', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ year: summaryYear, factor: factor })
-                });
-                const result = await response.json();
-                console.log('Summary Retrieved:', result);
-                document.getElementById('summaryResult').innerText = JSON.stringify(result.summary, null, 2);
-            } catch (error) {
-                console.error('Error:', error);
+            const response = await fetch('/get_summary_by_factor_year', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ year: summaryYear, factor: factor})
+            });
+            const result = await response.json();
+            document.getElementById('summaryResult').innerText = JSON.stringify(result.summary, null, 2);
+        };
+
+        document.getElementById('insertSurveyButton').onclick = async function(event) {
+            event.preventDefault();
+            const formData = new FormData();
+            formData.append('file', document.getElementById('surveyFile').files[0]);
+
+            const response = await fetch('/insert_survey_data', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            document.getElementById('surveyResult').innerText = JSON.stringify(result.status, null, 2);
+        };
+
+        document.getElementById('getCurrentDataButton').onclick = async function(event) {
+            event.preventDefault();
+            const surveyDataYear = document.getElementById('surveyDataYear').value;
+            if (surveyDataYear === "") {
+                alert("Please select a year.");
+                return;
             }
+
+            const response = await fetch('/get_survey_data_current', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ year: surveyDataYear })
+            });
+            const result = await response.json();
+            document.getElementById('surveyDataResult').innerText = JSON.stringify(result, null, 2);
+        };
+
+        document.getElementById('getFutureDataButton').onclick = async function(event) {
+            event.preventDefault();
+            const surveyDataYear = document.getElementById('surveyDataYear').value;
+            if (surveyDataYear === "") {
+                alert("Please select a year.");
+                return;
+            }
+
+            const response = await fetch('/get_survey_data_future', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ year: surveyDataYear })
+            });
+            const result = await response.json();
+            document.getElementById('surveyDataResult').innerText = JSON.stringify(result, null, 2);
         };
     </script>
 </body>

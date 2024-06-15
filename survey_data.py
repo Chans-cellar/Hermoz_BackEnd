@@ -76,6 +76,7 @@ def get_db_connection():
     conn = sqlite3.connect('predictions.db')
     return conn
 
+
 def insert_survey_data(df):
     conn = get_db_connection()
     c = conn.cursor()
@@ -100,7 +101,8 @@ def insert_survey_data(df):
                 exchange_rates_current, exchange_rates_future
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
-            pd.to_datetime(row.get(column_indices['timestamp'], None)).strftime("%Y-%m-%d %H:%M:%S") if pd.notnull(row.get(column_indices['timestamp'], None)) else None,
+            pd.to_datetime(row.get(column_indices['timestamp'], None)).strftime("%Y-%m-%d %H:%M:%S") if pd.notnull(
+                row.get(column_indices['timestamp'], None)) else None,
             row.get(column_indices['email'], None),
             row.get(column_indices['age'], None),
             row.get(column_indices['gender'], None), row.get(column_indices['education'], None),
@@ -125,9 +127,6 @@ def insert_survey_data(df):
     conn.close()
 
 
-
-
-
 def load_and_insert_survey_data(file_path):
     print('--' + file_path)
     try:
@@ -137,7 +136,6 @@ def load_and_insert_survey_data(file_path):
         insert_survey_data(df)
     except Exception as e:
         print(f'Error reading Excel file: {e}')
-
 
 
 def get_survey_available_years():
@@ -172,6 +170,7 @@ def get_survey_data_by_current_year(year):
 
     return result
 
+
 def get_survey_data_by_future_year(year):
     conn = get_db_connection()
     c = conn.cursor()
@@ -193,14 +192,17 @@ def get_survey_data_by_future_year(year):
 
     return result
 
-
-
-
-
-
-
-
-
+def categorize_survey_sentiment(score):
+    if score >= 0.8:
+        return 'Strongly Positive'
+    elif score >= 0.6:
+        return 'Mildly Positive'
+    elif score >= 0.4:
+        return 'Neutral'
+    elif score >= 0.2:
+        return 'Mildly Negative'
+    else:
+        return 'Strongly Negative'
 
 
 # Example usage

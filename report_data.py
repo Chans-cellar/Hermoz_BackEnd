@@ -120,3 +120,44 @@ def get_avg_sentiments_of_last_document():
         'data': {label: {'count': count, 'avg_sentiment': avg_sentiment} for label, avg_sentiment, count in
                  label_counts}
     }
+
+def categorize_sentiment(score):
+    if score >= 0.8:
+        return 'Strongly Positive'
+    elif score >= 0.6:
+        return 'Mildly Positive'
+    elif score >= 0.4:
+        return 'Neutral'
+    elif score >= 0.2:
+        return 'Mildly Negative'
+    else:
+        return 'Strongly Negative'
+
+def get_report_sentiment_class_ratios(year):
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    c.execute('''
+        SELECT label, sentiment_score
+        FROM predictions
+        WHERE year = ?
+    ''', (year,))
+    data = c.fetchall()
+    conn.close()
+
+    # Initialize a dictionary to store counts for each sentiment class per macroeconomic factor
+    sentiment_counts = {}
+    for factor, score in data:
+        sentiment_class = categorize_sentiment(score)
+        if factor not in sentiment_counts:
+            sentiment_counts[factor] = {'Strongly Positive': 0, 'Mildly Positive': 0, 'Neutral': 0, 'Mildly Negative': 0, 'Strongly Negative': 0}
+        sentiment_counts[factor][sentiment_class] += 1
+
+    # Calculate the ratios
+    sentiment_ratios = {}
+    for factor, counts in sentiment_counts.items():
+        total = sum(counts.values())
+        sentiment_ratios[factor] = {class_name: f"{(count / total * 100):.2f}" for class_name, count in counts.items()}
+
+    return sentiment_ratios
+

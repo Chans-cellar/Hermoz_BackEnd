@@ -35,11 +35,13 @@
             <option value="2021">2021</option>
             <option value="2022">2022</option>
             <option value="2023">2023</option>
-            <option value="2023">2024</option>
+            <option value="2024">2024</option>
         </select><br><br>
         <input type="button" value="Store Data" id="storeButton">
         <input type="button" value="Get Data" id="getButton">
         <input type="button" value="Process Data" id="processButton">
+        <input type="button" value="Correlation Analysis" id="correlationButton">
+        <input type="button" value="Get Report Sentiment Class Ratios" id="getReportSentimentRatiosButton">
     </form>
     <div id="progress-container">
         <div id="progress-bar">0%</div>
@@ -233,6 +235,36 @@
             });
             const result = await response.json();
             document.getElementById('surveyDataResult').innerText = JSON.stringify(result, null, 2);
+        };
+
+        document.getElementById('correlationButton').onclick = async function(event) {
+            event.preventDefault();
+            {#const year = document.getElementById('year').value;#}
+            const year = "2024";
+            if (year === "") {
+                alert("Please select a year.");
+                return;
+            }
+
+            const response = await fetch(`/correlation_analysis/${year}`, {
+                method: 'GET'
+            });
+            const result = await response.json();
+            document.getElementById('result').innerText = JSON.stringify(result.correlation, null, 2);
+        };
+
+        document.getElementById('getReportSentimentRatiosButton').onclick = async function(event) {
+            event.preventDefault();
+            const year = document.getElementById('year').value;
+            if (year === "") {
+                alert("Please select a year.");
+                return;
+            }
+            const response = await fetch(`/report_sentiment_class_ratios/${year}`, {
+                method: 'GET'
+            });
+            const result = await response.json();
+            document.getElementById('result').innerText = JSON.stringify(result.sentiment_class_ratios, null, 2);
         };
     </script>
 </body>

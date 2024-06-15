@@ -21,20 +21,21 @@ from data_preprocessing import preprocess_text
 from macroeconomic_classify import predict_category_by_hybrid
 from finBERT_sentiment_analysis import predict_finbert_sentiment
 from report_data import (store_prediction, get_avg_sentiments, get_avg_sentiments_of_last_document,
-                         get_avg_sentiments_by_year, get_avg_sentiments_by_factor, get_report_available_years)
+                         get_avg_sentiments_by_year, get_avg_sentiments_by_factor, get_report_available_years,
+                         get_report_sentiment_class_ratios)
 from summarize import get_summary_by_factor_year
+from correlation_analysis import correlation_analysis
 
 application = Flask(__name__)
 CORS(application)
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+
 # model_directory = 'E:\\studies\\USJ FOT\\lecture\\Research\\CodeBase\\Classifier Model\\macroecon_classifier'
 # tokenizer_directory = 'E:\\studies\\USJ FOT\\lecture\\Research\\CodeBase\\Classifier Model\\tokenizer_model'
 # tokenizer = BertTokenizer.from_pretrained(tokenizer_directory)
 # model = BertForSequenceClassification.from_pretrained(model_directory)
-
-
 
 
 def get_db_connection():
@@ -102,7 +103,6 @@ def detect_is_economic(texts):
     return weighted_sum > threshold
 
 
-
 # def predict_macroecon(text):
 #     inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True, max_length=512)
 #     with torch.no_grad():
@@ -113,9 +113,6 @@ def detect_is_economic(texts):
 #               'Unemployment']
 #     macroecon_label = labels[predicted_class]
 #     return macroecon_label
-
-
-
 
 
 def forecast_next_year(data):
@@ -160,8 +157,6 @@ def forecast():
             changes[label] = 'Data not available'
 
     return jsonify({'forecasts': forecasts, 'changes': changes})
-
-
 
 
 @application.route('/')
@@ -210,6 +205,7 @@ def store_data():
         else:
             return jsonify({'error': 'The document is not related to economics'}), 400
 
+
 @application.route('/process_data', methods=['POST'])
 def process_data():
     if 'file' not in request.files:
@@ -235,6 +231,8 @@ def process_data():
             for i, (preprocessed_txt, no_lemma_txt) in enumerate(sentences):
                 macroecon_label = predict_category_by_hybrid(preprocessed_txt)
                 sentiment_score = predict_finbert_sentiment(no_lemma_txt)
+
+                # can get results as individual sentences
                 results.append({
                     'sentence': no_lemma_txt,
                     'macroeconomic_factor': macroecon_label,
@@ -256,17 +254,18 @@ def process_data():
             return jsonify({'error': 'The document is not related to economics'}), 400
 
 
-
 @application.route('/get_single_doc_data', methods=['GET'])
 def get_single_doc_data():
     single_doc_sentiment = get_avg_sentiments_of_last_document()
     print(single_doc_sentiment)
     return jsonify({'single_doc_data': single_doc_sentiment})
 
+
 @application.route('/get_data', methods=['GET'])
 def get_data():
     label_counts = get_avg_sentiments()
     return jsonify({'results': label_counts})
+
 
 @application.route('/get_avg_sentiments_by_year', methods=['POST'])
 def get_avg_sentiments_by_year_response():
@@ -298,6 +297,15 @@ def get_avg_sentiments_by_factor_response():
         return jsonify({'error': str(e)}), 500
 
 
+@application.route('/report_sentiment_class_ratios/<year>', methods=['GET'])
+def report_sentiment_class_ratios_response(year):
+    try:
+        ratios = get_report_sentiment_class_ratios(year)
+        return jsonify({'sentiment_class_ratios': ratios})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @application.route('/get_summary_by_factor_year', methods=['POST'])
 def get_summary_by_factor_year_response():
     data = request.get_json()
@@ -307,6 +315,7 @@ def get_summary_by_factor_year_response():
     summary = get_summary_by_factor_year(year, factor)
 
     return jsonify({'summary': summary})
+
 
 
 
@@ -361,6 +370,15 @@ def get_survey_data_future_response():
 
         result = get_survey_data_by_future_year(selected_year)
         return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@application.route('/correlation_analysis/<year>', methods=['GET'])
+def correlation_analysis_response(year):
+    try:
+        correlation = correlation_analysis(year)
+        return jsonify({'correlation': correlation})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

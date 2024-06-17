@@ -17,7 +17,7 @@ import numpy as np
 
 from survey_data import load_and_insert_survey_data, get_survey_available_years, get_survey_data_by_current_year, \
     get_survey_data_by_future_year
-from data_preprocessing import preprocess_text
+from data_preprocessing import preprocess_text, tokenize_sentences, preprocess_text_for_sentences
 from macroeconomic_classify import predict_category_by_hybrid
 from finBERT_sentiment_analysis import predict_finbert_sentiment
 from report_data import (store_prediction, get_avg_sentiments, get_avg_sentiments_of_last_document,
@@ -25,6 +25,8 @@ from report_data import (store_prediction, get_avg_sentiments, get_avg_sentiment
                          get_report_sentiment_class_ratios)
 from summarize import get_summary_by_factor_year
 from correlation_analysis import correlation_analysis
+from forecast import fetch_data, prepare_data, get_predictions_for_year
+from compare_data import get_current_comparative_data, get_future_comparative_data
 
 application = Flask(__name__)
 CORS(application)
@@ -115,48 +117,35 @@ def detect_is_economic(texts):
 #     return macroecon_label
 
 
-def forecast_next_year(data):
-    X = data['Year'].values.reshape(-1, 1)
-    y = data.iloc[:, 1].values
-    model = LinearRegression()
-    model.fit(X, y)
-    next_year = np.array([[2024]])
-    forecast = model.predict(next_year)
-    return forecast[0]
+# def forecast_next_year(data):
+#     X = data['Year'].values.reshape(-1, 1)
+#     y = data.iloc[:, 1].values
+#     model = LinearRegression()
+#     model.fit(X, y)
+#     next_year = np.array([[2024]])
+#     forecast = model.predict(next_year)
+#     return forecast[0]
 
 
 @application.route('/forecast', methods=['GET'])
 def forecast():
-    conn = get_db_connection()
-    c = conn.cursor()
+    target_year = 2024  # You can change this as needed
+    predictions = get_predictions_for_year(target_year)
 
-    # Fetch data from the database
-    c.execute('SELECT year, label, AVG(sentiment_score) as avg_sentiment FROM predictions GROUP BY year, label')
-    data = c.fetchall()
-    conn.close()
+    df = fetch_data(target_year)
+    df_pivot = prepare_data(df)
 
-    # Process data into a DataFrame
-    df = pd.DataFrame(data, columns=['Year', 'Label', 'Avg_Sentiment'])
-    df_pivot = df.pivot(index='Year', columns='Label', values='Avg_Sentiment').fillna(0)
-
-    # Perform simple forecasting (example with linear regression)
-    forecasts = {}
     changes = {}
-    for label in ['Inflation', 'International Trade', 'GDP Growth', 'Exchange Rates', 'Monetary Policy',
-                  'Fiscal Policy', 'Unemployment']:
+    for label in predictions:
         if label in df_pivot.columns:
-            forecast_value = forecast_next_year(df_pivot.reset_index()[['Year', label]])
-            forecasts[label] = forecast_value
-
-            # Calculate the percentage change
             last_year_value = df_pivot[label].iloc[-1]
+            forecast_value = predictions[label]
             percentage_change = ((forecast_value - last_year_value) / last_year_value) * 100
             changes[label] = percentage_change
         else:
-            forecasts[label] = 'Data not available'
             changes[label] = 'Data not available'
 
-    return jsonify({'forecasts': forecasts, 'changes': changes})
+    return jsonify({'forecasts': predictions, 'changes': changes})
 
 
 @application.route('/')
@@ -172,7 +161,6 @@ def get_report_available_years_response():
     return jsonify({'years': years})
 
 
-@application.route('/store_data', methods=['POST'])
 def store_data():
     print('Files:', request.files)
     print('Form:', request.form)
@@ -204,6 +192,42 @@ def store_data():
             return jsonify({'status': 'Data stored successfully'})
         else:
             return jsonify({'error': 'The document is not related to economics'}), 400
+
+
+@application.route('/store_data', methods=['POST'])
+def store_data_2():
+    print('Files:', request.files)
+    print('Form:', request.form)
+    if 'file' not in request.files or 'year' not in request.form:
+        return jsonify({'error': 'File or year not provided'})
+
+    file = request.files['file']
+    year = request.form['year']
+    if file.filename == '' or year == '':
+        return jsonify({'error': 'File or year not selected'})
+
+    if file:
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(filepath)
+        # Determine if the document is related to economics
+        raw_texts = extract_text_from_pdf_file(filepath)
+        is_economic = detect_is_economic(raw_texts)
+        # if is_economic:
+        sentences = preprocess_text(raw_texts)
+        total_sentences = len(sentences)
+        for i, (preprocessed_txt, no_lemma_txt) in enumerate(sentences):
+            # macroecon_label = predict_macroecon(preprocessed_txt)
+            macroecon_label = predict_category_by_hybrid(preprocessed_txt)
+            sentiment_score = predict_finbert_sentiment(no_lemma_txt)
+            store_prediction(no_lemma_txt, macroecon_label, sentiment_score, year, filename)
+            progress = (i + 1) / total_sentences * 100
+            print(f'Processing: {progress:.2f}%')
+        return jsonify({'status': 'Data stored successfully'})
+    # else:
+
+
+#     return jsonify({'error': 'The document is not related to economics'}), 400
 
 
 @application.route('/process_data', methods=['POST'])
@@ -252,6 +276,45 @@ def process_data():
             return jsonify({'results': avg_sentiment_scores})
         else:
             return jsonify({'error': 'The document is not related to economics'}), 400
+
+
+@application.route('/process_data_paragraph', methods=['POST'])
+def process_data_paragraph():
+    # Check if JSON data is provided in the request
+    # if not request.is_json:
+    #     return jsonify({'error': 'Invalid request format, expected JSON'}), 400
+
+    data = request.get_json()
+    if 'body' not in data:
+        return jsonify({'error': 'Paragraph not provided'}), 400
+
+    paragraph = data['body']
+    print(paragraph)
+    if paragraph.strip() == '':
+        return jsonify({'error': 'Paragraph is empty'}), 400
+
+    clean_paragraph = paragraph.replace('\r\n', ' ').replace('\n', ' ').strip()
+
+    sentences = tokenize_sentences(clean_paragraph)
+    # print(sentences)
+    total_sentences = len(sentences)
+    results = []
+
+    for i, sentence in enumerate(sentences):
+        preprocessed_txt, no_lemma_txt = preprocess_text_for_sentences(sentence)
+        macroecon_label = predict_category_by_hybrid(preprocessed_txt)
+        sentiment_score = predict_finbert_sentiment(sentence)
+
+        results.append({
+            'factor': macroecon_label,
+            'sentimentScore': sentiment_score,
+            'description': sentence
+        })
+
+        progress = (i + 1) / total_sentences * 100
+        print(f'Processing: {progress:.2f}%')
+
+    return jsonify({'results': results})
 
 
 @application.route('/get_single_doc_data', methods=['GET'])
@@ -317,8 +380,6 @@ def get_summary_by_factor_year_response():
     return jsonify({'summary': summary})
 
 
-
-
 # --SURVEY DATA--
 @application.route('/insert_survey_data', methods=['POST'])
 def insert_survey_data():
@@ -374,11 +435,43 @@ def get_survey_data_future_response():
         return jsonify({'error': str(e)}), 500
 
 
+# COMPARE DATA
 @application.route('/correlation_analysis/<year>', methods=['GET'])
 def correlation_analysis_response(year):
     try:
         correlation = correlation_analysis(year)
         return jsonify({'correlation': correlation})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@application.route('/get_current_comparative_data', methods=['GET'])
+def get_current_comparative_data_endpoint():
+    # data = request.json
+    selected_year = "2024"
+
+    if not selected_year:
+        return jsonify({'error': 'Year not provided'}), 400
+
+    try:
+        comparative_data = get_current_comparative_data(selected_year)
+        return jsonify(comparative_data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@application.route('/get_future_comparative_data', methods=['GET'])
+def get_future_comparative_data_endpoint():
+    # data = request.get_json()
+    # year = data.get('year')
+    year = 2024
+
+    if not year:
+        return jsonify({'error': 'Year not provided'}), 400
+
+    try:
+        result = get_future_comparative_data(year)
+        return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

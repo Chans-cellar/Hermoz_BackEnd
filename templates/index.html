@@ -22,250 +22,327 @@
     </style>
 </head>
 <body>
-    <h1>Text Classification with FinBERT</h1>
-    <form id="textForm" enctype="multipart/form-data">
-        <label for="file">Upload PDF:</label><br>
-        <input type="file" id="file" name="file" accept=".pdf"><br><br>
-        <label for="year">Select Year:</label><br>
-        <select id="year" name="year" required>
+<h1>Text Classification with FinBERT</h1>
+<form id="textForm" enctype="multipart/form-data">
+    <label for="file">Upload PDF:</label><br>
+    <input type="file" id="file" name="file" accept=".pdf"><br><br>
+    <label for="year">Select Year:</label><br>
+    <select id="year" name="year" required>
+        <option value="">Select Year</option>
+        <option value="2018">2018</option>
+        <option value="2019">2019</option>
+        <option value="2020">2020</option>
+        <option value="2021">2021</option>
+        <option value="2022">2022</option>
+        <option value="2023">2023</option>
+        <option value="2024">2024</option>
+    </select><br><br>
+    <input type="button" value="Store Data" id="storeButton">
+    <input type="button" value="Get Data" id="getButton">
+    <input type="button" value="Process Data" id="processButton">
+    <input type="button" value="Correlation Analysis" id="correlationButton">
+    <input type="button" value="Get Report Sentiment Class Ratios" id="getReportSentimentRatiosButton">
+    <h1>Process Paragraph</h1>
+    <form id="paragraphForm">
+        <label for="paragraph">Enter Paragraph:</label><br>
+        <textarea id="paragraph" name="paragraph" rows="10" cols="50" required></textarea><br><br>
+        <input type="button" value="Process Paragraph Data" id="processParagraphButton">
+    </form>
+</form>
+<div id="progress-container">
+    <div id="progress-bar">0%</div>
+</div>
+<h2 id="result"></h2>
+
+<h1>Get Summary</h1>
+<form id="summaryForm">
+    <label for="summaryYear">Select Year:</label><br>
+    <select id="summaryYear" name="summaryYear" required>
+        <option value="">Select Year</option>
+        <!-- Years will be dynamically populated -->
+    </select><br><br>
+    <label for="factor">Select Macroeconomic Factor:</label><br>
+    <select id="factor" name="factor" required>
+        <option value="">Select Factor</option>
+        <option value="Inflation">Inflation</option>
+        <option value="International Trade">International Trade</option>
+        <option value="GDP Growth">GDP Growth</option>
+        <option value="Exchange Rates">Exchange Rates</option>
+        <option value="Monetary Policy">Monetary Policy</option>
+        <option value="Fiscal Policy">Fiscal Policy</option>
+        <option value="Unemployment">Unemployment</option>
+    </select><br><br>
+    <input type="button" value="Get Summary" id="getSummaryButton">
+</form>
+<h2 id="summaryResult"></h2>
+
+<h1>Survey Data</h1>
+<form id="surveyForm" enctype="multipart/form-data">
+    <label for="surveyFile">Upload Survey Data (Excel):</label><br>
+    <input type="file" id="surveyFile" name="file" accept=".xlsx"><br><br>
+    <input type="button" value="Insert Survey Data" id="insertSurveyButton">
+</form>
+<h2 id="surveyResult"></h2>
+
+<h1>Get Survey Data</h1>
+<form id="surveyDataForm">
+    <label for="surveyDataYear">Select Year:</label><br>
+    <select id="surveyDataYear" name="surveyDataYear" required>
+        <option value="">Select Year</option>
+        <!-- Years will be dynamically populated -->
+    </select><br><br>
+    <input type="button" value="Get Current Data" id="getCurrentDataButton">
+    <input type="button" value="Get Future Data" id="getFutureDataButton">
+</form>
+<h2 id="surveyDataResult"></h2>
+
+<h1>Comparative Data</h1>
+<form id="comparativeForm">
+    <label for="comparativeYear">Select Year:</label><br>
+    <select id="comparativeYear" name="year" required>
+        <option value="">Select Year</option>
+        <!-- Options will be populated dynamically -->
+    </select><br><br>
+    <input type="button" value="Get Comparative Data" id="getComparativeButton">
+</form>
+<h2 id="comparativeResult"></h2>
+<h1>Future Comparative Data</h1>
+    <form id="futureComparativeForm">
+        <label for="futureComparativeYear">Select Year:</label><br>
+        <select id="futureComparativeYear" name="year" required>
             <option value="">Select Year</option>
-            <option value="2018">2018</option>
-            <option value="2019">2019</option>
-            <option value="2020">2020</option>
-            <option value="2021">2021</option>
-            <option value="2022">2022</option>
-            <option value="2023">2023</option>
-            <option value="2024">2024</option>
+            <!-- Options will be populated dynamically -->
         </select><br><br>
-        <input type="button" value="Store Data" id="storeButton">
-        <input type="button" value="Get Data" id="getButton">
-        <input type="button" value="Process Data" id="processButton">
-        <input type="button" value="Correlation Analysis" id="correlationButton">
-        <input type="button" value="Get Report Sentiment Class Ratios" id="getReportSentimentRatiosButton">
+        <input type="button" value="Get Future Comparative Data" id="getFutureComparativeButton">
     </form>
-    <div id="progress-container">
-        <div id="progress-bar">0%</div>
-    </div>
-    <h2 id="result"></h2>
+    <h2 id="futureComparativeResult"></h2>
 
-    <h1>Get Summary</h1>
-    <form id="summaryForm">
-        <label for="summaryYear">Select Year:</label><br>
-        <select id="summaryYear" name="summaryYear" required>
-            <option value="">Select Year</option>
-            <!-- Years will be dynamically populated -->
-        </select><br><br>
-        <label for="factor">Select Macroeconomic Factor:</label><br>
-        <select id="factor" name="factor" required>
-            <option value="">Select Factor</option>
-            <option value="Inflation">Inflation</option>
-            <option value="International Trade">International Trade</option>
-            <option value="GDP Growth">GDP Growth</option>
-            <option value="Exchange Rates">Exchange Rates</option>
-            <option value="Monetary Policy">Monetary Policy</option>
-            <option value="Fiscal Policy">Fiscal Policy</option>
-            <option value="Unemployment">Unemployment</option>
-        </select><br><br>
-        <input type="button" value="Get Summary" id="getSummaryButton">
-    </form>
-    <h2 id="summaryResult"></h2>
+<script>
+    async function populateYearDropdowns() {
+        const surveyYearResponse = await fetch('/get_survey_available_years', {
+            method: 'GET'
+        });
+        const surveyYearResult = await surveyYearResponse.json();
+        const surveyYearOptions = surveyYearResult.years.map(year => `<option value="${year}">${year}</option>`).join('');
 
-    <h1>Survey Data</h1>
-    <form id="surveyForm" enctype="multipart/form-data">
-        <label for="surveyFile">Upload Survey Data (Excel):</label><br>
-        <input type="file" id="surveyFile" name="file" accept=".xlsx"><br><br>
-        <input type="button" value="Insert Survey Data" id="insertSurveyButton">
-    </form>
-    <h2 id="surveyResult"></h2>
+        const reportYearResponse = await fetch('/get_report_available_years', {
+            method: 'GET'
+        });
+        const reportYearResult = await reportYearResponse.json();
+        const reportYearOptions = reportYearResult.years.map(year => `<option value="${year}">${year}</option>`).join('');
 
-    <h1>Get Survey Data</h1>
-    <form id="surveyDataForm">
-        <label for="surveyDataYear">Select Year:</label><br>
-        <select id="surveyDataYear" name="surveyDataYear" required>
-            <option value="">Select Year</option>
-            <!-- Years will be dynamically populated -->
-        </select><br><br>
-        <input type="button" value="Get Current Data" id="getCurrentDataButton">
-        <input type="button" value="Get Future Data" id="getFutureDataButton">
-    </form>
-    <h2 id="surveyDataResult"></h2>
+        // Populate year dropdowns for various forms
+        {#document.getElementById('year').innerHTML += yearOptions;#}
+        document.getElementById('summaryYear').innerHTML += reportYearOptions;
+        document.getElementById('surveyDataYear').innerHTML += surveyYearOptions;
+    }
 
-    <script>
-        async function populateYearDropdowns() {
-            const surveyYearResponse = await fetch('/get_survey_available_years', {
-                method: 'GET'
-            });
-            const surveyYearResult = await surveyYearResponse.json();
-            const surveyYearOptions = surveyYearResult.years.map(year => `<option value="${year}">${year}</option>`).join('');
+    // Populate the year dropdowns when the page loads
+    document.addEventListener('DOMContentLoaded', populateYearDropdowns);
 
-            const reportYearResponse = await fetch('/get_report_available_years', {
-                method: 'GET'
-            });
-            const reportYearResult = await reportYearResponse.json();
-            const reportYearOptions = reportYearResult.years.map(year => `<option value="${year}">${year}</option>`).join('');
-
-            // Populate year dropdowns for various forms
-            {#document.getElementById('year').innerHTML += yearOptions;#}
-            document.getElementById('summaryYear').innerHTML += reportYearOptions;
-            document.getElementById('surveyDataYear').innerHTML += surveyYearOptions;
+    document.getElementById('storeButton').onclick = async function (event) {
+        const year = document.getElementById('year').value;
+        if (year === "") {
+            alert("Please select a year.");
+            return;
         }
 
-        // Populate the year dropdowns when the page loads
-        document.addEventListener('DOMContentLoaded', populateYearDropdowns);
+        event.preventDefault();
+        const formData = new FormData();
+        formData.append('file', document.getElementById('file').files[0]);
+        formData.append('year', year);
 
-        document.getElementById('storeButton').onclick = async function(event) {
-            const year = document.getElementById('year').value;
-            if (year === "") {
-                alert("Please select a year.");
-                return;
+        const response = await fetch('/store_data', {
+            method: 'POST',
+            body: formData
+        });
+        const result = await response.json();
+        document.getElementById('result').innerText = JSON.stringify(result.status, null, 2);
+
+        let progress = 0;
+        const progressBar = document.getElementById('progress-bar');
+        const interval = setInterval(() => {
+            if (progress >= 100) {
+                clearInterval(interval);
+            } else {
+                progress += 10;
+                progressBar.style.width = progress + '%';
+                progressBar.innerText = progress + '%';
             }
+        }, 100);
+    };
+    document.getElementById('processButton').onclick = async function (event) {
+        event.preventDefault();
+        const formData = new FormData();
+        formData.append('file', document.getElementById('file').files[0]);
 
+        const response = await fetch('/process_data', {
+            method: 'POST',
+            body: formData
+        });
+        const result = await response.json();
+        document.getElementById('result').innerText = JSON.stringify(result.results, null, 2);
+    };
+
+    document.getElementById('getButton').onclick = async function (event) {
+        event.preventDefault();
+        const response = await fetch('/forecast', {
+            method: 'GET'
+        });
+        const result = await response.json();
+        document.getElementById('result').innerText = JSON.stringify(result.forecast, null, 2);
+    };
+
+    document.getElementById('getSummaryButton').onclick = async function (event) {
+        event.preventDefault();
+        const summaryYear = document.getElementById('summaryYear').value;
+        const factor = document.getElementById('factor').value;
+        if (summaryYear === "" || factor === "") {
+            alert("Please select both year and macroeconomic factor.");
+            return;
+        }
+
+        const response = await fetch('/get_summary_by_factor_year', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({year: summaryYear, factor: factor})
+        });
+        const result = await response.json();
+        document.getElementById('summaryResult').innerText = JSON.stringify(result.summary, null, 2);
+    };
+
+    document.getElementById('insertSurveyButton').onclick = async function (event) {
+        event.preventDefault();
+        const formData = new FormData();
+        formData.append('file', document.getElementById('surveyFile').files[0]);
+
+        const response = await fetch('/insert_survey_data', {
+            method: 'POST',
+            body: formData
+        });
+        const result = await response.json();
+        document.getElementById('surveyResult').innerText = JSON.stringify(result.status, null, 2);
+    };
+
+    document.getElementById('getCurrentDataButton').onclick = async function (event) {
+        event.preventDefault();
+        const surveyDataYear = document.getElementById('surveyDataYear').value;
+        if (surveyDataYear === "") {
+            alert("Please select a year.");
+            return;
+        }
+
+        const response = await fetch('/get_survey_data_current', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({year: surveyDataYear})
+        });
+        const result = await response.json();
+        document.getElementById('surveyDataResult').innerText = JSON.stringify(result, null, 2);
+    };
+
+    document.getElementById('getFutureDataButton').onclick = async function (event) {
+        event.preventDefault();
+        const surveyDataYear = document.getElementById('surveyDataYear').value;
+        if (surveyDataYear === "") {
+            alert("Please select a year.");
+            return;
+        }
+
+        const response = await fetch('/get_survey_data_future', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({year: surveyDataYear})
+        });
+        const result = await response.json();
+        document.getElementById('surveyDataResult').innerText = JSON.stringify(result, null, 2);
+    };
+
+    document.getElementById('correlationButton').onclick = async function (event) {
+        event.preventDefault();
+        {#const year = document.getElementById('year').value;#}
+        const year = "2024";
+        if (year === "") {
+            alert("Please select a year.");
+            return;
+        }
+
+        const response = await fetch(`/correlation_analysis/${year}`, {
+            method: 'GET'
+        });
+        const result = await response.json();
+        document.getElementById('result').innerText = JSON.stringify(result.correlation, null, 2);
+    };
+
+    document.getElementById('getReportSentimentRatiosButton').onclick = async function (event) {
+        event.preventDefault();
+        const year = document.getElementById('year').value;
+        if (year === "") {
+            alert("Please select a year.");
+            return;
+        }
+        const response = await fetch(`/report_sentiment_class_ratios/${year}`, {
+            method: 'GET'
+        });
+        const result = await response.json();
+        document.getElementById('result').innerText = JSON.stringify(result.sentiment_class_ratios, null, 2);
+    };
+
+    document.getElementById('processParagraphButton').onclick = async function (event) {
+        event.preventDefault();
+        const formData = new FormData();
+        formData.append('paragraph', document.getElementById('paragraph').value);
+
+        const response = await fetch('/process_data_paragraph', {
+            method: 'POST',
+            body: formData
+        });
+        const result = await response.json();
+        document.getElementById('result').innerText = JSON.stringify(result.results, null, 2);
+    };
+
+    document.getElementById('getComparativeButton').onclick = async function (event) {
+        event.preventDefault();
+        {#const comparativeYear = "2024";#}
+        {#if (comparativeYear === "") {#}
+        {#    alert("Please select a year.");#}
+        {#    return;        }#}
+
+        const response = await fetch('/get_current_comparative_data', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            {#body: JSON.stringify({year: comparativeYear})#}
+        });
+        const result = await response.json();
+        document.getElementById('comparativeResult').innerText = JSON.stringify(result, null, 2);
+    };
+
+     document.getElementById('getFutureComparativeButton').onclick = async function(event) {
             event.preventDefault();
-            const formData = new FormData();
-            formData.append('file', document.getElementById('file').files[0]);
-            formData.append('year', year);
+            {#const futureComparativeYear = "2024";#}
+            {#if (futureComparativeYear === "") {#}
+            {#    alert("Please select a year.");#}
+            {#    return;            }#}
 
-            const response = await fetch('/store_data', {
-                method: 'POST',
-                body: formData
-            });
-            const result = await response.json();
-            document.getElementById('result').innerText = JSON.stringify(result.status, null, 2);
-
-            let progress = 0;
-            const progressBar = document.getElementById('progress-bar');
-            const interval = setInterval(() => {
-                if (progress >= 100) {
-                    clearInterval(interval);
-                } else {
-                    progress += 10;
-                    progressBar.style.width = progress + '%';
-                    progressBar.innerText = progress + '%';
-                }
-            }, 100);
-        };
-         document.getElementById('processButton').onclick = async function(event) {
-            event.preventDefault();
-            const formData = new FormData();
-            formData.append('file', document.getElementById('file').files[0]);
-
-            const response = await fetch('/process_data', {
-                method: 'POST',
-                body: formData
-            });
-            const result = await response.json();
-            document.getElementById('result').innerText = JSON.stringify(result.results, null, 2);
-        };
-
-        document.getElementById('getButton').onclick = async function(event) {
-            event.preventDefault();
-            const response = await fetch('/get_data', {
-                method: 'GET'
-            });
-            const result = await response.json();
-            document.getElementById('result').innerText = JSON.stringify(result.results, null, 2);
-        };
-
-        document.getElementById('getSummaryButton').onclick = async function(event) {
-            event.preventDefault();
-            const summaryYear = document.getElementById('summaryYear').value;
-            const factor = document.getElementById('factor').value;
-            if (summaryYear === ""|| factor === "") {
-                alert("Please select both year and macroeconomic factor.");
-                return;
-            }
-
-            const response = await fetch('/get_summary_by_factor_year', {
-                method: 'POST',
+            const response = await fetch('/get_future_comparative_data', {
+                method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ year: summaryYear, factor: factor})
+                {#body: JSON.stringify({ year: futureComparativeYear })#}
             });
             const result = await response.json();
-            document.getElementById('summaryResult').innerText = JSON.stringify(result.summary, null, 2);
+            document.getElementById('futureComparativeResult').innerText = JSON.stringify(result, null, 2);
         };
 
-        document.getElementById('insertSurveyButton').onclick = async function(event) {
-            event.preventDefault();
-            const formData = new FormData();
-            formData.append('file', document.getElementById('surveyFile').files[0]);
-
-            const response = await fetch('/insert_survey_data', {
-                method: 'POST',
-                body: formData
-            });
-            const result = await response.json();
-            document.getElementById('surveyResult').innerText = JSON.stringify(result.status, null, 2);
-        };
-
-        document.getElementById('getCurrentDataButton').onclick = async function(event) {
-            event.preventDefault();
-            const surveyDataYear = document.getElementById('surveyDataYear').value;
-            if (surveyDataYear === "") {
-                alert("Please select a year.");
-                return;
-            }
-
-            const response = await fetch('/get_survey_data_current', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ year: surveyDataYear })
-            });
-            const result = await response.json();
-            document.getElementById('surveyDataResult').innerText = JSON.stringify(result, null, 2);
-        };
-
-        document.getElementById('getFutureDataButton').onclick = async function(event) {
-            event.preventDefault();
-            const surveyDataYear = document.getElementById('surveyDataYear').value;
-            if (surveyDataYear === "") {
-                alert("Please select a year.");
-                return;
-            }
-
-            const response = await fetch('/get_survey_data_future', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ year: surveyDataYear })
-            });
-            const result = await response.json();
-            document.getElementById('surveyDataResult').innerText = JSON.stringify(result, null, 2);
-        };
-
-        document.getElementById('correlationButton').onclick = async function(event) {
-            event.preventDefault();
-            {#const year = document.getElementById('year').value;#}
-            const year = "2024";
-            if (year === "") {
-                alert("Please select a year.");
-                return;
-            }
-
-            const response = await fetch(`/correlation_analysis/${year}`, {
-                method: 'GET'
-            });
-            const result = await response.json();
-            document.getElementById('result').innerText = JSON.stringify(result.correlation, null, 2);
-        };
-
-        document.getElementById('getReportSentimentRatiosButton').onclick = async function(event) {
-            event.preventDefault();
-            const year = document.getElementById('year').value;
-            if (year === "") {
-                alert("Please select a year.");
-                return;
-            }
-            const response = await fetch(`/report_sentiment_class_ratios/${year}`, {
-                method: 'GET'
-            });
-            const result = await response.json();
-            document.getElementById('result').innerText = JSON.stringify(result.sentiment_class_ratios, null, 2);
-        };
-    </script>
+</script>
 </body>
 </html>

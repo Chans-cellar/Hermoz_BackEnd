@@ -150,6 +150,7 @@ def get_survey_available_years():
 
 
 def get_survey_data_by_current_year(year):
+    print(year)
     conn = get_db_connection()
     c = conn.cursor()
 
@@ -164,7 +165,7 @@ def get_survey_data_by_current_year(year):
             '''
         c.execute(query, (year,))
         avg_score = c.fetchone()[0]
-        result[f'{factor}_avg'] = avg_score
+        result[factor] = avg_score
 
     conn.close()
 
@@ -186,11 +187,12 @@ def get_survey_data_by_future_year(year):
                 '''
         c.execute(query, (year,))
         avg_score = c.fetchone()[0]
-        result[f'{factor}_avg'] = avg_score
+        result[factor] = avg_score
 
     conn.close()
 
     return result
+
 
 def categorize_survey_sentiment(score):
     if score >= 0.8:
@@ -203,7 +205,6 @@ def categorize_survey_sentiment(score):
         return 'Mildly Negative'
     else:
         return 'Strongly Negative'
-
 
 # Example usage
 # if __name__ == '__main__':
